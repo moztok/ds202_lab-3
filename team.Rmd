@@ -1,0 +1,187 @@
+---
+title: "individual1"
+author: "Oztok"
+date: "3/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#LOAD
+```{r}
+dat <- readxl::read_xls('GSS.xls')
+library(classdata)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+```
+
+
+
+##Rename
+```{r}
+dat <- dat %>% rename(year = `Gss year for this respondent`)
+dat <- dat %>% rename(wrkslf = `R self-emp or works for somebody`)
+dat <- dat %>% rename(wrkgovt = `Govt or private employee`)
+dat <- dat %>% rename(marital = `Marital status`)
+dat <- dat %>% rename(educ = `Highest year of school completed`)
+dat <- dat %>% rename(sex = `Respondents sex`)
+dat <- dat %>% rename(rincome = `Respondents income`)
+dat <- dat %>% rename(partyid = `Political party affiliation`)
+dat <- dat %>% rename(happy = `General happiness`)
+```
+
+<br>
+<br>
+
+<br>
+<br>
+
+##1
+```{r}
+dat1 <- dat[- grep("Don't know", dat$educ),]
+dat2 <- dat1[- grep("No answer", dat1$educ),]
+dat3 <- dat2[- grep("No answer", dat2$marital),]
+dat3$educ <- as.numeric(as.character(dat3$educ))
+dat3 %>%                                      
+  group_by(marital) %>%                         
+  summarise_at(vars(educ),              
+               list(name = mean)) %>%
+  arrange(desc(name))
+```
+<br>
+<br>
+## We found that people who were never married have the highest years of school experience
+<br>
+## We also found that widowed individuals have the lowest years of school experience.
+
+<br>
+<br>
+
+
+
+##2
+```{r}
+better_educated <- dat3 %>% group_by(marital) %>% filter(educ > mean(educ, na.rm = TRUE))
+str(better_educated)
+```
+<br>
+<br>
+
+
+
+##3
+```{r}
+dat4 <- dat3
+happiness <- dat4[dat4$happy %in% c('Very happy' , 'Pretty happy'), ]
+
+myTable = table(happiness$marital, happiness$happy)
+myTable
+myFrame <- as.data.frame(myTable) 
+
+
+a <- ggplot(myFrame, aes(x = Var1, y = Freq, group = Var2)) +
+  geom_bar(aes(fill = Var2), stat = "identity", position = "dodge") + 
+  labs(fill = "Happiness status") + labs(x= "Marital Status", y="Count")
+a
+```
+<br>
+<br>
+## I have used the happy and marital status variables
+<br>
+## As we can see the number of married people are generally tend to be  pretty happy compare to other marital status'
+<br>
+## The number of seperated people is the least happy group compared to other marital status'
+<br>
+<br>
+
+
+##4
+```{r}
+happiness1 <- happiness[- grep("Don't know", happiness$partyid),]
+happiness2 <- happiness1[- grep("No answer", happiness1$partyid),]
+myTable2 = table(happiness2$marital, happiness2$happy, happiness2$partyid)
+myTable2
+myFrame2 <- as.data.frame(myTable2)
+ggplot(myFrame2, aes(x=Var1, weight= Freq)) + geom_bar() + facet_grid(Var3 ~ Var2 )
+```
+<br>
+I do not believe there is a strong relation between affiliation between marital status, happiness. It is distributed pretty evenly.
+<br>
+<br>
+
+##5
+```{r}
+dat5 <- dat3
+myTable3 = table(dat5$marital, dat5$educ)
+myTable3
+
+myFrame3 <- as.data.frame(myTable3) 
+
+z <- ggplot(myFrame3, aes(x = Var2, y = Freq, group = Var1)) +
+  geom_bar(aes(fill = Var1), stat = "identity", position = "dodge") + 
+  labs(fill = "Happiness status") + labs(x= "Years of school", y="Count") + coord_flip()
+z
+```
+<br>
+<br>
+As seen in the graph, the # people who had 12 years of education or more tend to be married compared to the other education levels.
+<br>
+<br>
+
+##6
+```{r}
+sector <- happiness
+sector_h <- sector[sector$wrkgovt %in% c('Government' , 'Private'), ]
+
+
+myTable6 = table(sector_h$wrkgovt, sector_h$happy)
+myTable6
+myFrame6 <- as.data.frame(myTable6) 
+
+
+a <- ggplot(myFrame6, aes(x = Var1, y = Freq, group = Var2)) +
+  geom_bar(aes(fill = Var2), stat = "identity", position = "dodge") + 
+  labs(fill = "Happiness status") + labs(x= "Government or Private employee", y="Count")
+a
+
+```
+<br>
+<br>
+It is very obvious to see the # of people who work in private industry is greater than # of people who work in government.
+<br>
+People tend to be pretty happy instead of very happy in both categories
+<br>
+<br>
+
+
+
+##7
+```{r}
+dat7 <- dat
+wrk_self <- dat7[dat7$wrkslf %in% c('Self-employed' , 'Someone else'), ]
+income_comp <- wrk_self[wrk_self$rincome %in% c('Lt $1000' , '$1000 to 2999',  '$3000 to 3999',  '$4000 to 4999', '$5000 to 5999', '$6000 to 6999', '$7000 to 7999', '$8000 to 9999', 
+                                              '$10000 - 14999', '$15000 - 19999', '$20000 - 24999', '$25000 or more'), ]
+
+myTable7 = table(income_comp$wrkslf, income_comp$rincome)
+myTable7
+myFrame7 <- as.data.frame(myTable7) 
+
+
+o <- ggplot(myFrame7, aes(x = Var1, y = Freq, group = Var2)) +
+  geom_bar(aes(fill = Var2), stat = "identity", position = "dodge") + 
+  labs(fill = "Self-Employed or Work for Someone Else") + labs(x= "Income Leves", y="Count")
+o
+
+```
+<br>
+<br>
+This one was very surprising for me so I had to check my code multiple times
+<br>
+People who work for someone else gets paid more in every single income bracket
+<br>
+<br>
+
